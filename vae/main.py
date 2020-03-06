@@ -1,5 +1,6 @@
 from __future__ import print_function
 import argparse
+import librosa
 import torch
 import torch.utils.data
 from torch import nn, optim
@@ -78,7 +79,7 @@ optimizer = optim.Adam(model.parameters(), lr=1e-3)
 
 # Reconstruction + KL divergence losses summed over all elements and batch
 def loss_function(recon_x, x, mu, logvar):
-    BCE = F.mse_loss(recon_x, x, reduction='mean')
+    MSE = F.mse_loss(recon_x, x)
 
     # see Appendix B from VAE paper:
     # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
@@ -86,7 +87,7 @@ def loss_function(recon_x, x, mu, logvar):
     # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
     KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
 
-    return BCE + KLD
+    return MSE + KLD
 
 
 def train(epoch):
@@ -110,6 +111,12 @@ def train(epoch):
           epoch, train_loss / len(train_loader.dataset)))
 
 
+def save_audio(tensor, file_out, n_row=n):
+    y = tensor.numpy() * DATA_RANGE
+    x = librosa.core.istft(x, dataset.HOP_SIZE, dataset.FFT_SIZE)
+    librosa.output.write_wav(file_out, x, 22050)
+
+
 def test(epoch):
     model.eval()
     test_loss = 0
@@ -119,11 +126,10 @@ def test(epoch):
             recon_batch, mu, logvar = model(data)
             test_loss += loss_function(recon_batch, data, mu, logvar).item()
             if i == 0:
-                n = min(data.size(0), 8)
-                comparison = torch.cat([data[:n],
-                                      recon_batch.view(args.batch_size, 1, 513, 87)[:n]])
-                save_image(comparison.cpu(),
-                         'results/reconstruction_' + str(epoch) + '.png', nrow=n)
+                for n, item in enumerate(recon_batch):
+                    if n < 10:
+                        x = item.view(513, 87)
+                        save_audio(x, 'recon_%d_%d.wav' % (i, n))
 
     test_loss /= len(test_loader.dataset)
     print('====> Test set loss: {:.4f}'.format(test_loss))
@@ -133,7 +139,9 @@ if __name__ == "__main__":
         train(epoch)
         test(epoch)
         with torch.no_grad():
-            sample = torch.randn(64, 4, 513, 87).to(device)
+            sample = torch.randn(5, 4, 513, 87).to(device)
             sample = model.decode(sample).cpu()
-            save_image(sample.view(64, 1, 513, 87),
-                       'results/sample_' + str(epoch) + '.png')
+            for n, item in enumerate(sample):
+                    if n < 10:
+                        x = item.view(513, 87)
+                        save_audio(x, 'sample_%d_%d.wav' % (i, n))
