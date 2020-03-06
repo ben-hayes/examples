@@ -36,9 +36,9 @@ data = dataset.SingingData('data')
 train_len = int(len(data) * train_split)
 train_data, test_data = random_split(data, (train_len, len(data) - train_len))
 
-train_loader = torch.utils.data.DataLoader(train_data
+train_loader = torch.utils.data.DataLoader(train_data,
     batch_size=args.batch_size, shuffle=True, **kwargs)
-test_loader = torch.utils.data.DataLoader(test_data
+test_loader = torch.utils.data.DataLoader(test_data,
     batch_size=args.batch_size, shuffle=True, **kwargs)
 
 
@@ -78,7 +78,7 @@ optimizer = optim.Adam(model.parameters(), lr=1e-3)
 
 # Reconstruction + KL divergence losses summed over all elements and batch
 def loss_function(recon_x, x, mu, logvar):
-    BCE = F.binary_cross_entropy(recon_x, x.view(-1, 784), reduction='sum')
+    BCE = F.binary_cross_entropy(recon_x, x, reduction='sum')
 
     # see Appendix B from VAE paper:
     # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
@@ -92,7 +92,7 @@ def loss_function(recon_x, x, mu, logvar):
 def train(epoch):
     model.train()
     train_loss = 0
-    for batch_idx, (data, _) in enumerate(train_loader):
+    for batch_idx, data in enumerate(train_loader):
         data = data.to(device)
         optimizer.zero_grad()
         recon_batch, mu, logvar = model(data)
@@ -114,14 +114,14 @@ def test(epoch):
     model.eval()
     test_loss = 0
     with torch.no_grad():
-        for i, (data, _) in enumerate(test_loader):
+        for i, data in enumerate(test_loader):
             data = data.to(device)
             recon_batch, mu, logvar = model(data)
             test_loss += loss_function(recon_batch, data, mu, logvar).item()
             if i == 0:
                 n = min(data.size(0), 8)
                 comparison = torch.cat([data[:n],
-                                      recon_batch.view(args.batch_size, 1, 28, 28)[:n]])
+                                      recon_batch.view(args.batch_size, 1, 513, 87)[:n]])
                 save_image(comparison.cpu(),
                          'results/reconstruction_' + str(epoch) + '.png', nrow=n)
 
@@ -133,7 +133,7 @@ if __name__ == "__main__":
         train(epoch)
         test(epoch)
         with torch.no_grad():
-            sample = torch.randn(64, 4, 28, 28).to(device)
+            sample = torch.randn(64, 4, 513, 87).to(device)
             sample = model.decode(sample).cpu()
-            save_image(sample.view(64, 1, 28, 28),
+            save_image(sample.view(64, 1, 513, 87),
                        'results/sample_' + str(epoch) + '.png')

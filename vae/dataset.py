@@ -9,6 +9,8 @@ from torch.utils.data import Dataset
 FFT_SIZE = 1024
 HOP_SIZE = 512
 SPEC_DIMS = (513, 87)
+DATA_MEAN = 0.1128162226528620
+DATA_STD = 0.689340308041217
 
 class SingingData(Dataset):
     def __init__(self, file_dir):
@@ -26,7 +28,9 @@ class SingingData(Dataset):
         to = (min(SPEC_DIMS[0], spec.shape[0]), min(SPEC_DIMS[1], spec.shape[1]))
         trimmed[:to[0], :to[1]] = spec[:to[0], :to[1]]
 
-        return from_numpy(trimmed).float()
+        normalised = (trimmed - DATA_MEAN) / DATA_STD
+
+        return from_numpy(normalised).view(1, SPEC_DIMS[0], SPEC_DIMS[1].float()
 
 
 def make_spectrogram(audio):
