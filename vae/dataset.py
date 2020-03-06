@@ -39,6 +39,8 @@ def preprocess_data(audio_file):
     for chunk in chunks:
         spectrograms.append(make_spectrogram(audio))
 
+    return spectrograms
+
 
 def zero_pad(arr, to):
     x = arr.copy()
