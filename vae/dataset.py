@@ -30,7 +30,7 @@ class SingingData(Dataset):
 
         normalised = (trimmed - DATA_MEAN) / DATA_STD
 
-        return from_numpy(normalised).view(1, SPEC_DIMS[0], SPEC_DIMS[1].float()
+        return from_numpy(normalised).view(1, SPEC_DIMS[0], SPEC_DIMS[1]).float()
 
 
 def make_spectrogram(audio):
