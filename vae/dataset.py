@@ -3,10 +3,12 @@ import os
 
 import librosa
 import numpy as np
+from torch import from_numpy
 from torch.utils.data import Dataset
 
 FFT_SIZE = 1024
 HOP_SIZE = 512
+SPEC_DIMS = (513, 87)
 
 class SingingData(Dataset):
     def __init__(self, file_dir):
@@ -18,7 +20,13 @@ class SingingData(Dataset):
     def __getitem__(self, i):
         file_path = self._files[i]
         spec = np.load(file_path)
-        return tf.tensor(spec).float()
+
+        trimmed = np.zeros(SPEC_DIMS)
+
+        to = (min(SPEC_DIMS[0], spec.shape[0]), min(SPEC_DIMS[1], spec.shape[1]))
+        trimmed[:to[0], :to[1]] = spec[:to[0], :to[1]]
+
+        return from_numpy(trimmed).float()
 
 
 def make_spectrogram(audio):
@@ -39,6 +47,7 @@ def preprocess_data(audio_file):
 
     spectrograms = [ ]
     for chunk in chunks:
+        spec = make_spectrogram(chunk)
         spectrograms.append(make_spectrogram(chunk))
 
     return spectrograms
