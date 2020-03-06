@@ -3,9 +3,12 @@ import argparse
 import torch
 import torch.utils.data
 from torch import nn, optim
+from torch.utils.data import random_split
 from torch.nn import functional as F
 from torchvision import datasets, transforms
 from torchvision.utils import save_image
+
+import dataset
 
 
 parser = argparse.ArgumentParser(description='VAE MNIST Example')
@@ -26,13 +29,16 @@ torch.manual_seed(args.seed)
 
 device = torch.device("cuda" if args.cuda else "cpu")
 
-kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
-train_loader = torch.utils.data.DataLoader(
-    datasets.MNIST('../data', train=True, download=True,
-                   transform=transforms.ToTensor()),
+kwargs = {'num_workers': 8, 'pin_memory': True} if args.cuda else {}
+
+train_split = 0.9
+data = dataset.SingingData('data')
+train_len = int(len(data) * train_split)
+train_data, test_data = random_split(data, (train_len, len(data) - train_len))
+
+train_loader = torch.utils.data.DataLoader(train_data
     batch_size=args.batch_size, shuffle=True, **kwargs)
-test_loader = torch.utils.data.DataLoader(
-    datasets.MNIST('../data', train=False, transform=transforms.ToTensor()),
+test_loader = torch.utils.data.DataLoader(test_data
     batch_size=args.batch_size, shuffle=True, **kwargs)
 
 
