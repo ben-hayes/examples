@@ -63,13 +63,13 @@ def zero_pad(arr, to):
         return x[:to]
 
 
-def mine_files(file_dir):
+def mine_files(file_dir, ext='.npy'):
     files = []
     for entry in os.scandir(file_dir):
         if entry.is_dir():
             files += mine_files(entry.path)
             continue
-        elif os.path.splitext(entry.name)[1] == ".wav":
+        elif os.path.splitext(entry.name)[1] == ext:
             files.append(entry.path)
 
     return files
